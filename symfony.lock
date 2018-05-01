@@ -1,4 +1,7 @@
 {
+    "debach/zend-mp3": {
+        "version": "1.8.1"
+    },
     "doctrine/annotations": {
         "version": "1.0",
         "recipe": {

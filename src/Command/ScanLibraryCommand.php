@@ -13,7 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
-use wapmorgan\Mp3Info\Mp3Info;
 
 class ScanLibraryCommand extends ContainerAwareCommand
 {
@@ -70,9 +69,6 @@ class ScanLibraryCommand extends ContainerAwareCommand
         $em = $this->getContainer()->get('doctrine')->getEntityManager();
         $repository = $em->getRepository('App:Song');
 
-        $flushAfter = 0;
-        $itemPos = 0;
-
         foreach ($finder as $file) {
 
             if (!$file->isFile()) {
@@ -87,11 +83,6 @@ class ScanLibraryCommand extends ContainerAwareCommand
             ) ?: new Song();
 
             if ($song->getId() && !$forceUpdate) {
-                //$io->writeln(
-                //    sprintf(
-                //        'Skipping existing file "%s".', $file->getRelativePathname()
-                //    )
-                //);
                 continue;
             }
 
@@ -113,33 +104,103 @@ class ScanLibraryCommand extends ContainerAwareCommand
                 continue;
             }
 
-
             $io->writeln(
                 sprintf('Adding file "%s" to library.', $file->getRelativePathname())
             );
             $em->persist($song);
-
-            if ($itemPos >= $flushAfter) {
-                $em->flush();
-                $itemPos = 0;
-            } else {
-                $itemPos++;
-            }
+            $em->flush($song);
         }
-
-        $em->flush();
     }
 
     protected function addMetadataToSong(Song $song, SplFileInfo $file): Song
     {
-        $mp3Info = new Mp3Info($file->getPathname(), true);
+        $abs = new \Zend_Media_Mpeg_Abs($file->getPathname());
+        $song->setLength((int)$abs->getLengthEstimate());
+        unset($abs);
 
-        $song->setTitle($title = $mp3Info->tags2['TIT2'] ?: $mp3Info->tags1['song'] ?: '');
-        $song->setArtist($mp3Info->tags2['TPE1'] ?: $mp3Info->tags1['artist'] ?: '');
-        $song->setAlbum($mp3Info->tags2['TALB'] ?: $mp3Info->tags1['album'] ?: null);
-        $song->setTrackNumber((string)$mp3Info->tags1['track'] ?: null);
-        $song->setLength((int)ceil($mp3Info->duration));
-        $song->setYear((int)$mp3Info->tags2['TYER'] ?: (int)$mp3Info->tags1['year'] ?: null);
+        $song = $this->addFileMetadata($song, $file);
+        $song = $this->addId3v1Metadata($song, $file);
+        $song = $this->addId3v2Metadata($song, $file);
+
+
+        return $song;
+    }
+
+    protected function addFileMetadata(Song $song, SplFileInfo $file): Song
+    {
+        $song->setTitle($file->getBasename('.' . $file->getExtension()));
+
+        return $song;
+    }
+
+    protected function addId3v1Metadata(Song $song, SplFileInfo $file): Song
+    {
+        try {
+            $id3 = new \Zend_Media_Id3v1($file->getPathname());
+
+            $song->setTitle($id3->getTitle());
+            $song->setArtist($id3->getArtist());
+            $song->setTrackNumber((string)$id3->getTrack());
+            $song->setAlbum($id3->getAlbum());
+            $song->setYear($id3->getYear());
+        } catch (\Exception $exception) {
+            // skip
+        }
+
+        return $song;
+    }
+
+
+    protected function addId3v2Metadata(Song $song, SplFileInfo $file): Song
+    {
+        try {
+            $id3 = new \Zend_Media_Id3v2($file->getPathname(), ['readonly' => true]);
+
+            /** @var \Zend_Media_Id3_TextFrame $frame */
+            foreach ($id3->getFramesByIdentifier("T*") as $frame) {
+                $value = $frame->getText();
+                $encoding = mb_detect_encoding($value) ?: 'iso-8859-1';
+
+                if ('utf-8' != $encoding) {
+                    $value = mb_convert_encoding($value, 'utf-8', $encoding);
+                }
+
+                if (!$value) {
+                    continue;
+                }
+
+                switch (get_class($frame)) {
+                    case \Zend_Media_Id3_Frame_Tit2::class:
+                        $song->setTitle($value);
+                        break;
+
+                    case \Zend_Media_Id3_Frame_Tpe1::class:
+                        $song->setArtist($value);
+                        break;
+
+                    case \Zend_Media_Id3_Frame_Trck::class:
+                        $song->setTrackNumber($value);
+                        break;
+
+                    case \Zend_Media_Id3_Frame_Talb::class:
+                        $song->setAlbum($value);
+                        break;
+
+                    case \Zend_Media_Id3_Frame_Tyer::class:
+                        $song->setYear($value);
+                        break;
+
+                    case \Zend_Media_Id3_Frame_Tlen::class:
+                        $song->setLength((int)$value);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        } catch (\Exception $e) {
+            // skip
+        }
 
         return $song;
     }
