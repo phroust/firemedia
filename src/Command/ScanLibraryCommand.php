@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Finder\SplFileInfo;
 use wapmorgan\Mp3Info\Mp3Info;
 
 class ScanLibraryCommand extends ContainerAwareCommand
@@ -53,7 +54,7 @@ class ScanLibraryCommand extends ContainerAwareCommand
             return 1;
         }
 
-        $this->scanLibrary($library, $input->hasOption('forceUpdate'), $io);
+        $this->scanLibrary($library, (bool)$input->getOption('forceUpdate'), $io);
 
         return 0;
     }
@@ -69,7 +70,7 @@ class ScanLibraryCommand extends ContainerAwareCommand
         $em = $this->getContainer()->get('doctrine')->getEntityManager();
         $repository = $em->getRepository('App:Song');
 
-        $flushAfter = 50;
+        $flushAfter = 0;
         $itemPos = 0;
 
         foreach ($finder as $file) {
@@ -86,33 +87,32 @@ class ScanLibraryCommand extends ContainerAwareCommand
             ) ?: new Song();
 
             if ($song->getId() && !$forceUpdate) {
-                $io->writeln(
-                    sprintf(
-                        'Skipping existing file "%s".', $file->getRelativePathname()
-                    )
-                );
+                //$io->writeln(
+                //    sprintf(
+                //        'Skipping existing file "%s".', $file->getRelativePathname()
+                //    )
+                //);
                 continue;
             }
 
             try {
-                $mp3Info = new Mp3Info($file->getPathname(), true);
+                $song->setPath($file->getRelativePathname());
+                $song->setLibrary($library->getId());
+                $currentTime = time();
+                $song->setCrdate($currentTime);
+                $song->setTstamp($currentTime);
+
+                $song = $this->addMetadataToSong($song, $file);
             } catch (\Exception $exception) {
                 $io->error(
                     sprintf(
-                        'Cannot get metadata for file "%s". Skipping.', $file->getRelativePathname()
+                        'Cannot get metadata for file "%s". Error: "%s". Skipping file.', $file->getRelativePathname(),
+                        $exception->getMessage()
                     )
                 );
                 continue;
             }
 
-            $song->setPath($file->getRelativePathname());
-            $song->setLibrary($library->getId());
-            $song->setTitle($mp3Info->tags1['song']);
-            $song->setArtist($mp3Info->tags1['artist']);
-            $song->setAlbum($mp3Info->tags1['album'] ?: null);
-            $song->setTrackNumber($mp3Info->tags1['track'] ?: null);
-            $song->setLength((int)ceil($mp3Info->duration));
-            $song->setYear($mp3Info->tags1['year'] ? (int)$mp3Info->tags1['year'] : null);
 
             $io->writeln(
                 sprintf('Adding file "%s" to library.', $file->getRelativePathname())
@@ -128,5 +128,19 @@ class ScanLibraryCommand extends ContainerAwareCommand
         }
 
         $em->flush();
+    }
+
+    protected function addMetadataToSong(Song $song, SplFileInfo $file): Song
+    {
+        $mp3Info = new Mp3Info($file->getPathname(), true);
+
+        $song->setTitle($title = $mp3Info->tags2['TIT2'] ?: $mp3Info->tags1['song'] ?: '');
+        $song->setArtist($mp3Info->tags2['TPE1'] ?: $mp3Info->tags1['artist'] ?: '');
+        $song->setAlbum($mp3Info->tags2['TALB'] ?: $mp3Info->tags1['album'] ?: null);
+        $song->setTrackNumber((string)$mp3Info->tags1['track'] ?: null);
+        $song->setLength((int)ceil($mp3Info->duration));
+        $song->setYear((int)$mp3Info->tags2['TYER'] ?: (int)$mp3Info->tags1['year'] ?: null);
+
+        return $song;
     }
 }

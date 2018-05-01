@@ -47,7 +47,7 @@ class Song
     private $library;
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
+     * @ORM\Column(type="string", nullable=true)
      */
     private $trackNumber;
 
@@ -55,6 +55,16 @@ class Song
      * @ORM\Column(type="integer", nullable=true)
      */
     private $year;
+
+    /**
+     * @ORM\Column(type="integer")
+     */
+    private $tstamp;
+
+    /**
+     * @ORM\Column(type="integer")
+     */
+    private $crdate;
 
     public function getId()
     {
@@ -133,12 +143,12 @@ class Song
         return $this;
     }
 
-    public function getTrackNumber(): ?int
+    public function getTrackNumber(): ?string
     {
         return $this->trackNumber;
     }
 
-    public function setTrackNumber(?int $trackNumber): self
+    public function setTrackNumber(?string $trackNumber): self
     {
         $this->trackNumber = $trackNumber;
 
@@ -153,6 +163,30 @@ class Song
     public function setYear(?int $year): self
     {
         $this->year = $year;
+
+        return $this;
+    }
+
+    public function getTstamp(): ?int
+    {
+        return $this->tstamp;
+    }
+
+    public function setTstamp(int $tstamp): self
+    {
+        $this->tstamp = $tstamp;
+
+        return $this;
+    }
+
+    public function getCrdate(): ?int
+    {
+        return $this->crdate;
+    }
+
+    public function setCrdate(int $crdate): self
+    {
+        $this->crdate = $crdate;
 
         return $this;
     }
