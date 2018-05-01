@@ -1,0 +1,11 @@
+{
+    "name": "phroust/firemedia",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Alexander Jahn",
+            "email": "alte.waafkuh@googlemail.com"
+        }
+    ],
+    "require": {}
+}
