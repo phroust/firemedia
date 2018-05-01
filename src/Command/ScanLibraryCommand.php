@@ -142,7 +142,7 @@ class ScanLibraryCommand extends ContainerAwareCommand
             $song->setArtist($id3->getArtist());
             $song->setTrackNumber((string)$id3->getTrack());
             $song->setAlbum($id3->getAlbum());
-            $song->setYear($id3->getYear());
+            $song->setYear((int)$id3->getYear());
         } catch (\Exception $exception) {
             // skip
         }
@@ -187,11 +187,11 @@ class ScanLibraryCommand extends ContainerAwareCommand
                         break;
 
                     case \Zend_Media_Id3_Frame_Tyer::class:
-                        $song->setYear($value);
+                        $song->setYear((int)filter_var($value, FILTER_SANITIZE_NUMBER_INT));
                         break;
 
                     case \Zend_Media_Id3_Frame_Tlen::class:
-                        $song->setLength((int)$value);
+                        $song->setLength((int)filter_var($value, FILTER_SANITIZE_NUMBER_INT));
                         break;
 
                     default:
