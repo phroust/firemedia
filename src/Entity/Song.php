@@ -22,7 +22,7 @@ class Song
     private $title;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $artist;
 
@@ -52,7 +52,7 @@ class Song
     private $trackNumber;
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
+     * @ORM\Column(type="string", nullable=true)
      */
     private $year;
 
@@ -155,12 +155,12 @@ class Song
         return $this;
     }
 
-    public function getYear(): ?int
+    public function getYear(): ?string
     {
         return $this->year;
     }
 
-    public function setYear(?int $year): self
+    public function setYear(?string $year): self
     {
         $this->year = $year;
 
