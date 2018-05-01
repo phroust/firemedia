@@ -51,6 +51,11 @@ class Song
      */
     private $trackNumber;
 
+    /**
+     * @ORM\Column(type="integer", nullable=true)
+     */
+    private $year;
+
     public function getId()
     {
         return $this->id;
@@ -136,6 +141,18 @@ class Song
     public function setTrackNumber(?int $trackNumber): self
     {
         $this->trackNumber = $trackNumber;
+
+        return $this;
+    }
+
+    public function getYear(): ?int
+    {
+        return $this->year;
+    }
+
+    public function setYear(?int $year): self
+    {
+        $this->year = $year;
 
         return $this;
     }

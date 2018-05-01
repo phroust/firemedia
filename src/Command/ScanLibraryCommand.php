@@ -5,7 +5,6 @@ namespace App\Command;
 use App\Entity\Library;
 use App\Entity\Song;
 use Doctrine\ORM\EntityManager;
-use duncan3dc\MetaAudio\Tagger;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,6 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
+use wapmorgan\Mp3Info\Mp3Info;
 
 class ScanLibraryCommand extends ContainerAwareCommand
 {
@@ -69,9 +69,6 @@ class ScanLibraryCommand extends ContainerAwareCommand
         $em = $this->getContainer()->get('doctrine')->getEntityManager();
         $repository = $em->getRepository('App:Song');
 
-        $tagger = new Tagger();
-        $tagger->addDefaultModules();
-
         $flushAfter = 50;
         $itemPos = 0;
 
@@ -98,7 +95,7 @@ class ScanLibraryCommand extends ContainerAwareCommand
             }
 
             try {
-                $info = $tagger->open($file->getPathname());
+                $mp3Info = new Mp3Info($file->getPathname(), true);
             } catch (\Exception $exception) {
                 $io->error(
                     sprintf(
@@ -110,12 +107,12 @@ class ScanLibraryCommand extends ContainerAwareCommand
 
             $song->setPath($file->getRelativePathname());
             $song->setLibrary($library->getId());
-            $song->setTitle($info->getTitle());
-            $song->setArtist($info->getArtist());
-            $song->setAlbum($info->getAlbum() ?: null);
-            $song->setTrackNumber($info->getTrackNumber() ?: null);
-            // todo
-            $song->setLength(0);
+            $song->setTitle($mp3Info->tags1['song']);
+            $song->setArtist($mp3Info->tags1['artist']);
+            $song->setAlbum($mp3Info->tags1['album'] ?: null);
+            $song->setTrackNumber($mp3Info->tags1['track'] ?: null);
+            $song->setLength((int)ceil($mp3Info->duration));
+            $song->setYear($mp3Info->tags1['year'] ? (int)$mp3Info->tags1['year'] : null);
 
             $io->writeln(
                 sprintf('Adding file "%s" to library.', $file->getRelativePathname())

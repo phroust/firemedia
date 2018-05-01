@@ -176,6 +176,9 @@
     "symfony/yaml": {
         "version": "v4.0.9"
     },
+    "wapmorgan/mp3info": {
+        "version": "0.0.3"
+    },
     "zendframework/zend-code": {
         "version": "3.3.0"
     },

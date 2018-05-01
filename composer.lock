@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "a1512331101b9217e2f7be38c6300f15",
+    "content-hash": "c7a5bb4ab000117b4532578bd4f9774a",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -2573,6 +2573,44 @@
             "description": "Symfony Yaml Component",
             "homepage": "https://symfony.com",
             "time": "2018-04-08T08:49:08+00:00"
+        },
+        {
+            "name": "wapmorgan/mp3info",
+            "version": "0.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/wapmorgan/Mp3Info.git",
+                "reference": "1f98fd2316c81e1b67627fd3acf27c12791071ac"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/wapmorgan/Mp3Info/zipball/1f98fd2316c81e1b67627fd3acf27c12791071ac",
+                "reference": "1f98fd2316c81e1b67627fd3acf27c12791071ac",
+                "shasum": ""
+            },
+            "bin": [
+                "bin/mp3scan"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "wapmorgan\\Mp3Info\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0"
+            ],
+            "description": "The fastest php library to extract mp3 tags & meta information.",
+            "keywords": [
+                "audio",
+                "id3",
+                "id3v1",
+                "id3v2",
+                "mp3",
+                "mpeg"
+            ],
+            "time": "2018-03-19T20:01:04+00:00"
         },
         {
             "name": "zendframework/zend-code",
