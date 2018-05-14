@@ -69,6 +69,8 @@ class ScanLibraryCommand extends ContainerAwareCommand
         $em = $this->getContainer()->get('doctrine')->getEntityManager();
         $repository = $em->getRepository('App:Song');
 
+        $skipped = $added = $error = 0;
+
         foreach ($finder as $file) {
 
             if (!$file->isFile()) {
@@ -83,6 +85,7 @@ class ScanLibraryCommand extends ContainerAwareCommand
             ) ?: new Song();
 
             if ($song->getId() && !$forceUpdate) {
+                $skipped++;
                 continue;
             }
 
@@ -101,6 +104,7 @@ class ScanLibraryCommand extends ContainerAwareCommand
                         $exception->getMessage()
                     )
                 );
+                $error++;
                 continue;
             }
 
@@ -109,7 +113,15 @@ class ScanLibraryCommand extends ContainerAwareCommand
             );
             $em->persist($song);
             $em->flush($song);
+            $added++;
         }
+
+        $io->writeln(
+            sprintf('Results for library "%d":', $library->getId())
+        );
+        $io->writeln(
+            sprintf('Added: %d | Skipped: %d | Error: %d', $added, $skipped, $error)
+        );
     }
 
     protected function addMetadataToSong(Song $song, SplFileInfo $file): Song
